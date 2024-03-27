@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>accuse</title>
+    <link rel="icon" href="../base/assets/images/icons/bubble.png" style="height: 40px" />
+    <link rel="stylesheet" href="../base/assets/fonts/fonts.css" />
+    <link rel="stylesheet" href="../gamesfull/basemin.css" />
+    <script src="../base/alibs/jq3.js"></script>
+    <script src="../base/alibs/jsyaml.js"></script>
+  </head>
+
+  <body>
+    <!-- #region svg symbols -->
+    <svg style="visibility: hidden; position: fixed" width="0" height="0" xmlns="http://www.w3.org/2000/svg" version="1.1">
+      <symbol id="Treff" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMinYMid">
+        <path
+          d="M30 150C35 385 85 400 130 500L-130 500C-85 400 -35 385 -30 150A10 10 0 0 0 -50 150A210 210 0 1 1 -124 -51A10 10 0 0 0 -110 -65A230 230 0 1 1 110 -65A10 10 0 0 0 124 -51A210 210 0 1 1 50 150A10 10 0 0 0 30 150Z"
+          fill="black"
+        ></path>
+      </symbol>
+      <symbol id="Karo" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMinYMid">
+        <path d="M-400 0C-350 0 0 -450 0 -500C0 -450 350 0 400 0C350 0 0 450 0 500C0 450 -350 0 -400 0Z" fill="red"></path>
+      </symbol>
+      <symbol id="Herz" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMinYMid">
+        <path
+          d="M0 -300C0 -400 100 -500 200 -500C300 -500 400 -400 400 -250C400 0 0 400 0 500C0 400 -400 0 -400 -250C-400 -400 -300 -500 -200 -500C-100 -500 0 -400 -0 -300Z"
+          fill="red"
+        ></path>
+      </symbol>
+      <symbol id="Pik" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMinYMid">
+        <path
+          d="M0 -500C100 -250 355 -100 355 185A150 150 0 0 1 55 185A10 10 0 0 0 35 185C35 385 85 400 130 500L-130 500C-85 400 -35 385 -35 185A10 10 0 0 0 -55 185A150 150 0 0 1 -355 185C-355 -100 -100 -250 0 -500Z"
+          fill="black"
+        ></path>
+      </symbol>
+      <symbol id="Times" x="0px" y="0px" width="32" height="32" viewBox="0 0 32 32" style="fill: #000000">
+        <path
+          d="M 16 3 C 8.832031 3 3 8.832031 3 16 C 3 23.167969 8.832031 29 16 29 C 23.167969 29 29 23.167969 29 16 C 29 8.832031 23.167969 3 16 3 Z M 16 5 C 22.085938 5 27 9.914063 27 16 C 27 22.085938 22.085938 27 16 27 C 9.914063 27 5 22.085938 5 16 C 5 9.914063 9.914063 5 16 5 Z M 12.21875 10.78125 L 10.78125 12.21875 L 14.5625 16 L 10.78125 19.78125 L 12.21875 21.21875 L 16 17.4375 L 19.78125 21.21875 L 21.21875 19.78125 L 17.4375 16 L 21.21875 12.21875 L 19.78125 10.78125 L 16 14.5625 Z"
+        ></path>
+      </symbol>
+    </svg>
+    <!-- #endregion svg symbols -->
+
+    <div class="page-wrap">
+      <div id="dAdmin">
+        <div id="dAdminLeft" style="display: flex; justify-content: space-evenly; align-items: center; padding-left: 10px"></div>
+        <div id="dAdminMiddle"></div>
+        <div id="dAdminRight" style="display: flex; justify-content: space-evenly; align-items: center; box-sizing: border-box"></div>
+      </div>
+      <div id="dTakeover" style="background: silver; padding: 3px; position: relative"></div>
+      <div id="dTest" style="background: silver; padding: 3px; position: relative">
+        <button onclick="onclick_home()">home</button>
+        <button onclick="onclick_reload()">reload</button>
+        <button onclick="onclick_restart_move()" id="bRestartMove" style="display: none">RESTART MOVE</button>
+        <button id="bExperience" onclick="onclick_experience()" class="selectable_button" style="display: none">BRIBE!</button>
+        &nbsp;&nbsp;&nbsp;
+        <span id="dAdvanced1" style="display: none">
+          <button onclick="onclick_reset_all()">delete tables</button>
+        </span>
+        <span id="dHostButtons" style="display: none">
+          <button id="bSpotitStart" onclick="onclick_start_spotit()">spotit start</button>
+          <button onclick="onclick_restart()">RESTART</button>
+          <button id="bSkipPlayer" onclick="onclick_skip()">SKIP</button>
+          &nbsp;&nbsp;&nbsp;
+          <button id="bClearAck" onclick="onclick_ack()">CLEAR ACK</button>
+          &nbsp;
+        </span>
+        <span id="dTestButtons" style="display: none">
+          <button onclick="fentest7_cards()">TEST</button>
+          <button onclick="fentest6_start4()">4!</button>
+          <button onclick="fentest6_start5()">5</button>
+          <button onclick="fentest6_start6()">6</button>
+          <button onclick="fentest6_start8()">8</button>
+          <button onclick="fentest6_start11()">11</button>
+          <button onclick="fentest6_start14()">14</button>
+          <button onclick="onclick_skip_membership_selection()">alliance</button>
+          <button onclick="onclick_vote_empty()">vote empty</button>
+          <button onclick="onclick_vote_president()">vote president</button>
+          <button onclick="onclick_vote_random()">vote random</button>
+          <button onclick="onclick_vote_red()">vote red</button>
+          <button onclick="onclick_vote_1()">vote 1</button>
+
+          <!-- <button onclick="test_start_aristo(3)">TEST ARISTO</button> -->
+          <!-- <button onclick="test_start_aristo(2)">TEST ARISTO 2</button> -->
+          <!-- <button onclick="test_start_ferro()">TEST FERRO</button> -->
+          <!-- <button onclick="test_start_ferro('hotseat')">TEST FERRO HOTSEAT</button> -->
+          <!-- <button onclick="test_start_ferro('solo')">TEST FERRO SOLO</button> -->
+        </span>
+        &nbsp;&nbsp;&nbsp;
+        <button id="bRandomMove" onclick="onclick_random()" style="display: none">random</button>
+        <button id="dummy" class="dummy">dummy</button>
+        <div id="dAdvanced" style="display: none">
+          <button onclick="onclick_restart()">RESTART</button>
+          <button onclick="onclick_stoppolling()">stop polling</button>
+          <button onclick="onclick_startpolling()">start polling</button>
+          <button onclick="onclick_reset_all()">delete tables</button>
+          <button onclick="test7_add_hand_card()">add card</button>
+          <button onclick="onclick_remove_host()">remove host</button>
+          <button onclick="onclick_ack()">CLEAR ACK</button>
+          <button onclick="onclick_random()">random</button>
+          <br />
+          unit tests:
+          <button onclick="fentest0_min_items()">min items</button>
+          <button onclick="fentest1_auction()">auction</button>
+          <button onclick="fentest2_build()">build</button>
+          <button onclick="fentest4_visit()">visit</button>
+          <button onclick="fentest5_market_opens()">pop</button>
+          <button onclick="fentest6_endgame()">endgame</button>
+          <button onclick="fentest7_gameover()">GAMEOVER</button>
+          <button onclick="onclick_tithe_all()">tithe</button>
+        </div>
+        <div id="dTablename" style="float: right; font-family: algerian; margin-right: 5px"></div>
+      </div>
+      <div id="dTexture">
+        <div id="dMMM" style="position: absolute; background: red; color: yellow; width: 100%; text-align: center"></div>
+        <div id="dTitle" style="display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; height: 42px; width: 100%">
+          <div id="dTitleLeft" style="display: flex; justify-content: space-evenly; align-items: center; padding-left: 10px"></div>
+          <div id="dTitleMiddle"></div>
+          <div id="dTitleRight" style="min-width: 200px; display: flex; justify-content: end; align-items: center; box-sizing: border-box"></div>
+        </div>
+        <div id="dScreen">
+          <!-- <div id="dInstruction" style="box-sizing: border-box; background: #00000040; color: white; width: 100%"></div> -->
+          <div id="dMessage" class="section"></div>
+          <div id="dUsers" class="mCenterFlex pad"></div>
+          <div id="dTable"></div>
+          <div id="dTables" class="section"></div>
+          <div id="dGames" class="section"></div>
+          <div id="dMenu" class="section"></div>
+          <div id="dPadding" style="height: 20px"></div>
+        </div>
+      </div>
+    </div>
+    <!-- <div id="dSpecial" style="position:absolute;top:700px;left:20px">HALLO</div> -->
+    <div id="dBandMessage" styles="background:skyblue;min-height:100vh;display:none"></div>
+    <!-- <div id="loader_holder" class="loader_on"><img width="30" src="../base/assets/images/icons/giphy.gif" /></div> -->
+    <footer class="site-footer">
+      <div>
+        <p style="width: 100%; font-size: 12px; text-align: center">
+          Copyright © 2020-
+          <script>
+            document.write(new Date().getFullYear());
+          </script>
+          Vidulus Ludorum All Rights Reserved
+        </p>
+      </div>
+    </footer>
+  </body>
+
+	<script src="../gamesfull/basemin.js"></script>
+	<script src="../gamesfull/legacy.js"></script>
+
+	<script src="../gamesfull/apiserver.js"></script>
+	<script src="../gamesfull/apisimphp.js"></script>
+	<script src="../gamesfull/cards.js"></script>
+	<script src="../gamesfull/gamehelpers.js"></script>
+	<script src="../gamesfull/onclick.js"></script>
+	<script src="../gamesfull/select.js"></script>
+	<script src="../gamesfull/sim.js"></script>
+	<script src="../gamesfull/test.js"></script>
+
+	<script src="../gamesfull/accuse.js"></script>
+	<script src="../gamesfull/aristo.js"></script>
+	<script src="../gamesfull/bluff.js"></script>
+	<script src="../gamesfull/fritz.js"></script>
+	<script src="../gamesfull/ferro.js"></script>
+	<script src="../gamesfull/spotit.js"></script>
+	<script src="../gamesfull/wise.js"></script>
+
+	<script src="../gamesfull/baustelle.js"></script>
+
+	<script src="../gamesfull/start.js"></script>
+
+
+</html>

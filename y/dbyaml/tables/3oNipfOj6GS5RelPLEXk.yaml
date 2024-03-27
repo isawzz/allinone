@@ -1,0 +1,31 @@
+status: started
+id: 3oNipfOj6GS5RelPLEXk
+fen:
+  players:
+    amanda:
+      name: amanda
+      playmode: human
+      strategy: ''
+    lauren:
+      name: lauren
+      playmode: human
+      strategy: ''
+  turn:
+    - amanda
+    - lauren
+game: a_game
+owner: amanda
+friendly: soirée in Sofia
+players:
+  - name: amanda
+    playmode: human
+    strategy: ''
+  - name: lauren
+    playmode: human
+    strategy: ''
+playerNames:
+  - amanda
+  - lauren
+options:
+  mode: multi
+  handsize: 10
