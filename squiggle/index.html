@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<svg width="0" height="0">
+		<!--  Define the patterns for the different fill colors  -->
+		<pattern id="striped-red" patternUnits="userSpaceOnUse" width="4" height="4">
+			<path d="M-1,1 H5" style="stroke:#e74c3c; stroke-width:1" />
+		</pattern>
+		<pattern id="striped-green" patternUnits="userSpaceOnUse" width="4" height="4">
+			<path d="M-1,1 H5" style="stroke:#27ae60; stroke-width:1" />
+		</pattern>
+		<pattern id="striped-purple" patternUnits="userSpaceOnUse" width="4" height="4">
+			<path d="M-1,1 H5" style="stroke:#8e44ad; stroke-width:1" />
+		</pattern>
+	</svg>
+	<div class="container">
+		<h1 class="title">SET <small>(Card game)</small></h1>
+		<div class="game">
+			<div class="sidebar">
+				<div class="options">
+					<button id="restart" onclick="setBoard()">Restart</button>
+					<button id="add" onclick="add3Cards()">+3 cards</button>
+					<button id="hint" onclick="hint()">Hint</button>
+				</div>
+				<div class="log-container log-big">
+					<h2 class="log-header">Log</h2>
+					<div class="log"></div>
+				</div>
+			</div>
+			<div class="board"><!-- Filled by the JS --></div>
+			<div class="log-container log-small">
+				<h2 class="log-header">Log</h2>
+				<div class="log"></div>
+			</div>
+		</div>
+		<div class="rules">
+			<h3>How To Play:</h3>
+			<p>Use your mouse to select SETs from the board.</p>
+			<p>A set consists of three cards satisfying all of these conditions:</p>
+			<ul>
+				<li>They all have the same number or have three different numbers.</li>
+				<li>They all have the same symbol or have three different symbols.</li>
+				<li>They all have the same shading or have three different shadings.</li>
+				<li>They all have the same color or have three different colors.</li>
+			</ul>
+			<p>The rules of Set are summarized by: If you can sort a group of three cards into "two of ____ and one of ____", then it is not a set.</p>
+				<p>For example, these three cards form a set:</p>
+			<div class="set-example">
+				<div class="card fill-red">
+					<div class="card-content">
+						<svg viewBox="-2 -2 54 104"><path d="M25 0 L50 50 L25 100 L0 50 Z" fill="url(#striped-red)"></path></svg>
+					</div>
+				</div>
+				<div class="card fill-red">
+					<div class="card-content">
+						<svg viewBox="-2 -2 54 104"><path d="M25 0 L50 50 L25 100 L0 50 Z" fill="#e74c3c"></path></svg>
+						<svg viewBox="-2 -2 54 104"><path d="M25 0 L50 50 L25 100 L0 50 Z" fill="#e74c3c"></path></svg>
+					</div>
+				</div>
+				<div class="card fill-red">
+					<div class="card-content">
+						<svg viewBox="-2 -2 54 104"><path d="M25 0 L50 50 L25 100 L0 50 Z" fill="none"></path></svg>
+						<svg viewBox="-2 -2 54 104"><path d="M25 0 L50 50 L25 100 L0 50 Z" fill="none"></path></svg>
+						<svg viewBox="-2 -2 54 104"><path d="M25 0 L50 50 L25 100 L0 50 Z" fill="none"></path></svg>
+					</div>
+				</div>
+			</div>
+			<p>Given any two cards from the deck, there is one and only one other card that forms a set with them.</p>
+			<p>There are cases when there will not be any sets on the board, you can than use the '+3 cards' button for a better chance at finding a set.</p>
+			<p>You can use the 'Hint' and '+3 cards' buttons if you ever get stuck. </p>
+			<small>Rules taken from <a href="https://en.wikipedia.org/wiki/Set_(game)">Wikipedia</a></small>
+		</div>
+	<!--   <div class="notes">
+			<h3>What's next?</h3>
+			<ul>
+				<li>Display success/error messages</li>
+				<li>Finish styling the game</li>
+				<li>Add animations for replacing cards</li>
+				<li>Add a winning stage</li>
+			</ul>
+		</div> -->
+	</div>
+	<!-- <div class="message success">
+		<h1>Good Job!</h1>
+	</div> -->
+</body>
+</html>
