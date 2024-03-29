@@ -10,6 +10,7 @@ var cardsAdded = false;
 var currentSET;
 var hintCounter = 0;
 var logCounter = 0;
+
 function makeDeck() {
   // Fill the deck with cards
   deck.splice(0);//empty deck
