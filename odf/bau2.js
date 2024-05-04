@@ -1,39 +1,28 @@
+async function showTable(table) {
+	INTERRUPT(); //reentrance?!?!?
+	DA.counter += 1; let me = getUname();
+	if (!isDict(table)) { let id = table; table = await mGetRoute('table', { id }); } 
+	if (!table) { showMessage('table deleted!'); return await showTables('showTable'); }
+	else if (!table.playerNames.includes(me)) { showMessage(`SPECTATOR VIEW NOT YET IMPLEMENTED!`); Clientdata.table = null; return; }
 
-// function onsockNewTable(x) {
-//   let table = x.table;
-//   //let tables = x.tables;
-//   //Serverdata.tables = tables;
-//   console.log('::SOCK new table:', table);
-//   showTables();
-// }
-async function onsockDeleteTable(x) {
-  //console.log('x',x)
-  Serverdata.tables = x.tables;
-  //console.log('::SOCK deleteTable:', tables);
-  let [me,table,menu]=[Clientdata.curUser,Clientdata.curTable,Clientdata.curMenu]; console.log('SOCK deleteTable',me,menu,table);
-  //if ()
-  showTables()
+	Clientdata.table = table; DA.tsTable=DA.merged;
+
+	clearEvents();
+	showTitle(`${table.friendly}`);
+	let func = DA.funcs[table.game];
+	T = {};
+	let items = T.items = await func.present('dMain',table);
+	mRise('dMain');
+
+	let playmode = getPlaymode(table,me);
+	if (TESTING) testUpdateTestButtons();
+
+	if (table.status == 'over') return showGameover(table);
+
+	if (!table.fen.turn.includes(me)) return;
+
+	if (playmode == 'bot') return await func.botMove(table, items, me);
+	else return await func.activate(table, items);
+
 }
-async function onsockTable(x) {
-  let table = x.table;
-  //let tables = x.tables;
-  //Serverdata.tables = tables;
-  console.log('::SOCK table:', table);
-  if (Clientdata.curMenu == 'play'){
-    if (table.status == 'started' && table.fen.turn.includes(Clientdata.curUser)) await showTable(table,Clientdata.curUser);
-    else await showTables();
-  }
-}
-function onsockTurnUpdate(turn) {
-  console.log('::SOCK turn:', turn);
-  Clientdata.fen.turn = turn;
-  instructionUpdate();
-  hourglassUpdate();
-  tabtitleUpdate();
-}
-
-
-
-
-
 

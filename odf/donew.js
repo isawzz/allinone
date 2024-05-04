@@ -1,20 +1,3 @@
-function createOpenTable(gamename, players, options) {
-	let playerNames = players.map(x => x.name);
-	assertion(playerNames[0] == U.name, `_addTable: owner should be ${U.name} and first in ${playerNames.join(',')}`);
-	let t={
-		status: 'open',
-		id: generateTableId(),
-		fen: null,
-		game: gamename,
-		owner: playerNames[0],
-		friendly: generateTableName(),
-		players: players,
-		playerNames: playerNames,
-		options
-	};
-	return t;
-
-}
 function adjustCropper(img, dc, sz) {
 	let [w, h] = [img.width, img.height]; console.log('sz', w, h,)
 	let [cx, cy, radx, rady, rad] = [w / 2, h / 2, sz / 2, sz / 2, sz / 2];
@@ -97,7 +80,7 @@ function clearBodyDiv(styles = {}, opts = {}) { document.body.innerHTML = ''; re
 
 function clearCell(cell) { mClear(cell); mStyle(cell, { opacity: 0 }); }
 
-function clearMain() { clear_timeouts(); mClear('dMain'); mClear('dTitle'); }
+function clearMain() { DA.counter = 0; clearEvents(); mClear('dMain'); mClear('dTitle'); }
 
 function clearParent(ev) { mClear(ev.target.parentNode); }
 
@@ -228,24 +211,14 @@ function collEnableListCommands() {
 }
 function collectOptions() {
 	let poss = Serverdata.config.games[DA.gamename].options;
-	if (nundef(poss)) return;
 	let options = DA.options = {};
+	if (nundef(poss)) return options;
 	for (const p in poss) {
 		let fs = mBy(`d_${p}`);
 		let val = get_checked_radios(fs)[0];
 		options[p] = isNumber(val) ? Number(val) : val;
 	}
 	return options;
-}
-function collectPlayers(options) {
-
-	let players = [];
-	if (isList(DA.playerlist)) players = DA.playerlist.map(x => ({ name: x.name, playmode: x.playmode, strategy: valf(x.strategy, options.strategy, 'random') }));
-	// : rPlayers(U.name,valf(options.nplayers-1);
-	// let players = DA.playerlist.map(x => ({ name: x.uname, playmode: x.playmode }));
-	// for (const pl of players) { if (isEmpty(pl.strategy)) pl.strategy = valf(options.strategy, 'random'); }
-	return players;
-	// startgame(game, players, options); hide('dMenu');
 }
 function collExists(collname) { return isdef(M.byCollection[collname]); }
 
@@ -377,7 +350,7 @@ function collKeyCollnameFromElem(elem) { return { key: elem.getAttribute('key'),
 function collKeyCollnameFromSelkey(selkey) { return { key: stringBefore(selkey, '@'), collname: stringAfter(selkey, '@') }; }
 
 function collLocked(collname) {
-	if (U.name != '____unsafe' && ['all', 'amanda', 'animals', 'big', 'emo', 'fa6', 'icon', 'nations', 'users'].includes(collname)) {
+	if (getUname() != '____unsafe' && ['all', 'amanda', 'animals', 'big', 'emo', 'fa6', 'icon', 'nations', 'users'].includes(collname)) {
 		//console.log(`LOCKED collection ${collname}`);
 		return true;
 	}
@@ -656,7 +629,6 @@ async function cropOrExpandImageAndGetDataUrl(imageSrc, x, y) {
 		img.src = imageSrc;
 	});
 }
-function createHumanPlayer(name) { return { name, playmode: 'human', strategy: 'random' }; }
 function createScaledCanvasFromImage(src) {
 	return new Promise((resolve, reject) => {
 		const img = new Image();
@@ -816,6 +788,10 @@ function extractWords(s, allowed) {
 	if (isdef(allowed)) specialChars = arrMinus(specialChars, toLetters(allowed));
 	let parts = splitAtAnyOf(s, specialChars.join('')).map(x => x.trim());
 	return parts.filter(x => !isEmpty(x));
+}
+function formatLegend(key){
+	return key.includes('per') ? stringBefore(key, '_') + '/' + stringAfterLast(key, '_') 
+	: key.includes('_')? replaceAll(key,'_',' '): key;
 }
 function generateRandomWords(n, unique = false) {
 	// Sample words to pick from
@@ -1214,16 +1190,6 @@ async function mPrompt(gadget) {
 		};
 	});
 }
-async function mSleep(ms = 1000) {
-	return new Promise(
-		(res, rej) => {
-			if (ms <= 3000) {
-				setTimeout(res, ms);
-			} else {
-				console.log('param should be less than 3001');
-			}
-		});
-}
 async function ondropSaveUrl(url) {
 	console.log('save dropped url to config:', url);
 	Serverdata.config = mPostRoute('postConfig', { url: url });
@@ -1258,6 +1224,13 @@ function rWords(n = 1) {
 	let arr = rChoose(words, n);
 	return arr;
 }
+function setTableToStarted(table) {
+	//console.log(table.id,table.game, table.friendly, table.players);
+	table.status = 'started';
+	table.step = 0;
+	table.fen = DA.funcs[table.game].setup(table); //create initial fen
+	return table;
+}
 async function showColors() {
 	showTitle('Set Color Theme');
 	let sz = 30;
@@ -1271,7 +1244,9 @@ async function showColors() {
 	}
 }
 async function showDashboard() {
-	mDom('dMain', { fg: getThemeFg() }, { html: `hi, ${U.name}! this is your dashboard` })
+	let me = getUname();
+	mDom('dMain', { fg: getThemeFg() }, { html: `hi, ${me}! this is your dashboard` });
+	if (me == 'guest') mDom('dMain',{align:'center',className:'section'},{html:'click username in upper left corner to log in'})
 }
 async function showDirPics(dir, dParent) {
 	let imgs = await mGetFiles(dir);
@@ -1310,27 +1285,27 @@ function showEventOpen(id) {
 	mButton('Delete', () => { deleteEvent(id); closePopup(); }, buttons, { fg: 'red' })
 	mDom(line, { fz: '90%', maright: 5, float: 'right', }, { html: `by ${e.user}` });
 }
-async function showGameMenu(gamename) {
-	//let dMenu = mBy('dMenu'); iClear(dMenu);
-	let dMenu = mBy('dGameMenu'); if (isdef(dMenu)) { mClear(dMenu); } else dMenu = mDom('dMain', {}, { className: 'section', id: 'dGameMenu' });
-	mText(`<h2>game options</h2>`, dMenu, { maleft: 12 });
-	// show_standard_title(dMenu, 'Game Options');
-	let d = mDiv(dMenu, { align: 'center' }, 'fMenuInput');
-	let style = { display: 'flex', justify: 'center', w: '100%', gap: 10, matop: 10 };
-	let dPlayers = mDiv(d, style, 'dMenuPlayers'); mCenterFlex(dPlayers);
-	let dOptions = mDiv(d, style, 'dMenuInput'); mCenterFlex(dOptions);
-	let dButtons = mDiv(d, style, 'dMenuButtons');
-	DA.gamename = gamename;
-	await showGamePlayers(dPlayers, gamename);
-	await showGameOptions(dOptions, gamename);
-	let astart = mButton('Start', onclickStartGame, dButtons, {}, ['button', 'input']);
-	let ajoin = mButton('Open to Join', onclickOpenToJoinGame, dButtons, {}, ['button', 'input']);
-	let acancel = mButton('Cancel', () => mClear(dMenu), dButtons, {}, ['button', 'input']);
-	let bclear = mButton('Clear Players', onclickClearPlayers, dButtons, {}, ['button', 'input']);
+function mRemoveIfExists(d){ d=toElem(d);if (isdef(d)) d.remove();}
+
+async function sendMergeTable(o) { 
+	if (nundef(o)) {
+		let table = Cliendata.table;
+		let name = getUname();
+		let id = table.id;
+		o={name,id,table};
+	}else if (nundef(o.name)){
+		//o interpreted as table object!
+		let table = o;
+		let name = getUname();
+		let id = table.id;
+		o={name,id,table};
+	}
+	let table =  await mPostRoute('mergeTable', o); 
+  await showTable(table);
 
 }
+
 async function showGameOptions(dParent, game) {
-	mRemoveChildrenFromIndex(dParent, 2);
 	let poss = Serverdata.config.games[game].options;
 	if (nundef(poss)) return;
 	for (const p in poss) {
@@ -1338,58 +1313,11 @@ async function showGameOptions(dParent, game) {
 		let val = poss[p];
 		if (isString(val)) {
 			let list = val.split(',');
-			let legend = key.includes('per') ? stringBefore(key, '_') + '/' + stringAfterLast(key, '_') : key;
+			let legend = formatLegend(key);
 			let fs = mRadioGroup(dParent, {}, `d_${key}`, legend);
 			for (const v of list) { mRadio(v, isNumber(v) ? Number(v) : v, key, fs, { cursor: 'pointer' }, null, key, true); }
 			measure_fieldset(fs);
 		}
-	}
-}
-async function showGamePlayers(dParent, gamename) {
-	let users = await mGetRoute('users');
-	//console.log('users',users);
-
-	let d = mDom(dParent, { display: 'flex', gap: 6, wrap: true })
-	DA.playerlist = [];
-	DA.allPlayers = [];
-	DA.lastName = null;
-	let params = [gamename, DA.playerlist];
-	let funcs = [style_not_playing, style_playing_as_human, style_playing_as_bot];
-
-	for (const name in users) {
-		let d1 = mDom(d, { cursor: 'pointer' });
-		d1.setAttribute('username', name)
-		let img = showUserImage(name, d1, 40); //for(const i of range(3))showUserImage(name,d,40);
-		let label = mDom(d1, { matop: -4, fz: 12, hline: 12 }, { html: name });
-
-		let item = { name, div: d1, state: 0, strategy: '', isSelected: false };
-		DA.allPlayers.push(item);
-		if (name == U.name) { toggle_select(item, funcs, gamename, DA.playerlist); DA.lastName = name; }
-		else d1.onclick = ev => {
-			if (ev.shiftKey) {
-				console.log('shift!!!')
-				let list = DA.allPlayers;
-				if (nundef(DA.lastName)) DA.lastName = list[0].name;
-				console.log(DA.lastName, list)
-				let x1 = list.find(x => x.name == DA.lastName);
-				let i1 = list.indexOf(x1);
-				let x2 = list.find(x => x.name == item.name);
-				let i2 = list.indexOf(x2);
-				if (i1 == i2) return;
-				if (i1 > i2) [i1, i2] = [i2, i1];
-				assertion(i1 < i2, "NOT IN CORRECT ORDER!!!!!")
-				for (let i = i1; i <= i2; i++) {
-					let xitem = DA.allPlayers[i];
-					if (xitem.isSelected) continue;
-					style_playing_as_human(xitem, gamename, DA.playerlist);
-				}
-				DA.lastName = item.uname;
-			} else {
-				toggle_select(item, funcs, gamename, DA.playerlist);
-				if (item.isSelected) DA.lastName = item.name;
-			}
-		}
-
 	}
 }
 function showGames(ms = 500) {
@@ -1397,11 +1325,12 @@ function showGames(ms = 500) {
 	let dParent = mBy('dGameList'); if (isdef(dParent)) { mClear(dParent); } else dParent = mDom('dMain', {}, { className: 'section', id: 'dGameList' });
 
 	mText(`<h2>start new game</h2>`, dParent, { maleft: 12 });
-	let d = mDiv(dParent, { fg: 'white', animation: 'appear 1s ease both' }, 'game_menu'); mFlexWrap(d);
+	// let d = mDiv(dParent, { fg: 'white', animation: 'appear 1s ease both' }, 'game_menu'); mFlexWrap(d);
+	let d = mDiv(dParent, { fg: 'white' }, 'game_menu'); mFlexWrap(d);
 
 	let gamelist = 'accuse aristo bluff ferro nations spotit wise'; if (DA.TEST0) gamelist += ' a_game'; gamelist = toWords(gamelist);
 	//gamelist = dict2list(Serverdata.config.games, 'key'); gamelist = sortBy(gamelist, 'friendly').map(x => x.key);
-	gamelist = ['spotit','a_game']
+	gamelist = ['setgame']
 	//console.log('gamelist', gamelist)
 	
 
@@ -1518,13 +1447,14 @@ function showNavbar() {
 	// console.log(commands)
 	return nav;
 }
-async function showTables() {
+async function showTables(from) {
 	Clientdata.table = null;
-	assertion(Clientdata.curUser == U.name,"ShowTables!!!!!!!")
-	let me = U.name;
+	if (TESTING) testUpdateTestButtons();
+
+	let me = getUname();
 	// let tables=Serverdata.tables;
 	let tables = Serverdata.tables = await mGetRoute('tables');
-	//console.log('tables', tables);
+	//console.log(from,'tables', me,tables);
 	//return;
 	tables.map(x => x.prior = x.status == 'open' ? 0 : x.turn.includes(me) ? 1 : x.playerNames.includes(me) ? 2 : 3);
 	sortBy(tables, 'prior');
@@ -1537,9 +1467,9 @@ async function showTables() {
 	tables.map(x => x.game_friendly = capitalize(Serverdata.config.games[x.game].friendly));
 	// tables.map(x => x.playerNames = x.players.map(y => y.name));
 	mText(`<h2>game tables</h2>`, dParent, { maleft: 12 })
-	let t = mDataTable(tables, dParent, null, ['friendly', 'game_friendly', 'playerNames'], 'tables', false);
+	let t = UI.tables = mDataTable(tables, dParent, null, ['friendly', 'game_friendly', 'playerNames'], 'tables', false);
 
-	mTableCommandify(t.rowitems.filter(ri => ri.o.status == 'started'), {
+	mTableCommandify(t.rowitems.filter(ri => ri.o.status != 'open'), {
 		0: (item, val) => hFunc(val, 'onclickTable', item.o.id, item.id),
 	});
 	mTableStylify(t.rowitems.filter(ri => ri.o.status == 'open'), { 0: { fg: 'blue' }, });
@@ -1553,10 +1483,11 @@ async function showTables() {
 
 		if (ri.o.status == 'open') {
 			//join or leave button!
-			//depending on U.name status!
 			let playerNames = ri.o.playerNames;
 			if (playerNames.includes(me)) {
-				let h1 = hFunc('leave', 'onclickLeaveTable', ri.o.id); let c = mAppend(r, mCreate('td')); c.innerHTML = h1;
+				if (ri.o.owner != me) {
+					let h1 = hFunc('leave', 'onclickLeaveTable', ri.o.id); let c = mAppend(r, mCreate('td')); c.innerHTML = h1;
+				}
 			} else {
 				let h1 = hFunc('join', 'onclickJoinTable', ri.o.id); let c = mAppend(r, mCreate('td')); c.innerHTML = h1;
 			}
@@ -1632,38 +1563,25 @@ function startPanning(ev) {
 	}
 	panStart(ev);
 }
-function style_not_playing(item, game, list) {
-	let ui = iDiv(item); let uname = ui.getAttribute('username');
-	mStyle(ui, { bg: 'transparent', fg: 'black' });
-	arrLast(arrChildren(ui)).innerHTML = uname;
-	item.ifunc = 0; item.playmode = 'none'; removeInPlace(list, item);
-	item.isSelected = false;
-}
-function style_playing_as_bot(item, game, list) {
-	let ui = iDiv(item); let uname = ui.getAttribute('username'); let bg = getGameColor(game);
-	mStyle(ui, { bg: bg, fg: colorIdealText(bg) });
-	arrLast(arrChildren(ui)).innerHTML = uname.substring(0, 3) + 'bot';
-	item.ifunc = 2; item.playmode = 'bot';
-	item.isSelected = true;
-}
-function style_playing_as_human(item, game, list) {
-	//console.log('item',item,game,list)
-	let ui = iDiv(item); let uname = ui.getAttribute('username');
-	let color = getUserColor(uname);
-	mStyle(ui, { bg: color, fg: colorIdealText(color) });
-	arrLast(arrChildren(ui)).innerHTML = uname;
-	item.ifunc = 1; item.playmode = 'human'; list.push(item);
-	item.isSelected = true;
-}
+async function switchToMainMenu(name){return await switchToMenu(UI.nav,name);}
 async function switchToMenu(menu, key) {
 	menuCloseCurrent(menu);
 	Clientdata.curMenu = key; //console.log('switchToMenu',Clientdata)
 	await menuOpen(menu, key);
 }
+async function _switchToOtherUser(name1,name2) {
+	let uname = await mGetRoute('otherUser',{name1,name2});
+	await switchToUser(uname);
+}
+async function switchToOtherUser() {
+	let uname = await mGetRoute('otherUser',arguments);
+	console.log('uname',uname)
+	await switchToUser(uname);
+}
 async function switchToUser(uname) {
 	if (!isEmpty(uname)) uname = normalizeString(uname);
 	if (isEmpty(uname)) uname = 'guest';
-	sockPostUserChange(U ? U.name : '', uname); //das ist nur fuer die client id!
+	sockPostUserChange(U ? getUname() : '', uname); //das ist nur fuer die client id!
 	U = await getUser(uname);
 	Clientdata.curUser = uname;
 	localStorage.setItem('username', uname);
@@ -1671,15 +1589,19 @@ async function switchToUser(uname) {
 	iDiv(UI.user).innerHTML = uname;
 	setColors(U.color);
 
-	if (uname == 'guest') { await switchToMenu(UI.nav, 'home'); menuDisable(UI.nav, 'plan'); }
-	else {
+	if (uname == 'guest') { 
+		await switchToMenu(UI.nav, 'home'); 
+		menuDisable(UI.nav, 'plan'); 
+		//showMessage('click user name in upper left corner to log in!',5000)
+	}	else {
 		menuEnable(UI.nav, 'plan');
 		let t = Clientdata.table;
 		let cur = Clientdata.curMenu; //UI.nav.cur; //console.log('current menu is', cur);
-		if (cur == 'play' && isdef(t) && t.playerNames.includes(uname) && t.status == 'started') await showTable(t, uname);
+		if (cur == 'play' && isdef(t) && t.playerNames.includes(uname) && t.status == 'started') await showTable(t.id);
 		else await switchToMenu(UI.nav, valf(cur, 'home'));
 	}
 }
+async function switchToTables(){return await switchToMainMenu('play');}
 function toggle_select(item, funcs) {
 	let params = [...arguments];
 	let ifunc = (valf(item.ifunc, 0) + 1) % funcs.length; let f = funcs[ifunc]; f(item, ...params.slice(2));
