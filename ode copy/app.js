@@ -14,7 +14,8 @@ const dbDirectory = path.join(__dirname, '..', 'y', 'dbyaml');
 const configFile = path.join(uploadDirectory, 'config.yaml');
 const usersFile = path.join(dbDirectory, 'users.yaml');
 const eventsFile = path.join(dbDirectory, 'events.yaml');
-const superdiFile = path.join(uploadDirectory, 'm.yaml');
+const mFile = path.join(uploadDirectory, 'm.yaml');
+const superdiFile = path.join(uploadDirectory, 'superdi.yaml');
 const tablesDir = path.join(uploadDirectory, 'tables');
 const tablesFile = path.join(uploadDirectory, 'tableinfo.yaml');
 const usersDir = path.join(uploadDirectory, 'users');
@@ -369,7 +370,7 @@ app.post('/deleteItem', (req, res) => {
 		res.json(`item ${key} NOT FOUND! NO UPDATE!!!!!!`);
 	} else {
 		delete M.superdi[key];
-		let y = yaml.dump(M);
+		let y = yaml.dump(M.superdi);
 		fs.writeFileSync(superdiFile, y, 'utf8');
 		io.emit('superdi', key);
 		res.json(`item ${key} deleted successfully!`);
@@ -448,20 +449,6 @@ app.post('/postImage', (req, res) => {
 		fileName: fname,
 	});
 });
-app.post('/postNewItem', (req, res) => {
-	let key = req.body.key;
-	let item = req.body.item;
-	if (nundef(M.superdi[key])) {
-		M.superdi[key] = item;
-		let y = yaml.dump(M);
-		fs.writeFileSync(superdiFile, y, 'utf8');
-		item.key = key;
-		io.emit('superdi', item);
-		res.json(`item ${key} posted successfully!`);
-	} else {
-		res.json(`item ${key} is a DUPLICATE!!!! NOT ADDED!!!`);
-	}
-});
 app.post('/postUpdateEvent', (req, res) => {
 	let id = req.body.id;
 	let data = req.body;
@@ -476,19 +463,69 @@ app.post('/postUpdateEvent', (req, res) => {
 	res.json(`events updated successfully!`);
 	//res.json(data);
 });
-app.post('/postUpdateItem', (req, res) => {
+app.post('/postNewItem_', (req, res) => {
+	let key = req.body.key;
+	let item = req.body.item;
+	if (nundef(M.superdi[key])) {
+		M.superdi[key] = item;
+		let y = yaml.dump(M.superdi);
+		fs.writeFileSync(superdiFile, y, 'utf8');
+		item.key = key;
+		io.emit('superdi', item);
+		res.json(`item ${key} posted successfully!`);
+	} else {
+		res.json(`item ${key} is a DUPLICATE!!!! NOT ADDED!!!`);
+	}
+});
+app.post('/postUpdateItem_', (req, res) => {
 	let key = req.body.key;
 	let item = req.body.item;
 	if (nundef(M.superdi[key])) {
 		res.json(`item ${key} NOT FOUND! NO UPDATE!!!!!!`);
 	} else {
 		M.superdi[key] = item;
-		let y = yaml.dump(M);
+		let y = yaml.dump(M.superdi);
 		fs.writeFileSync(superdiFile, y, 'utf8');
 		item.key = key;
 		io.emit('superdi', item);
 		res.json(`item ${key} updated successfully!`);
 	}
+});
+app.post('/postUpdateSuperdi', (req, res) => {
+	let partialdi = req.body.di;
+	let toBeDeleted = valf(req.body.deletedKeys, []);
+	let collname = req.body.collname;
+	let deleteCollection = req.body.deleteCollection; //true when deleting a collection entirely!
+	console.log('<== postUpdateSuperdi')
+	console.log('to be deleted', toBeDeleted);
+	console.log('to be updated:', Object.keys(partialdi));
+	for (const k of toBeDeleted) {
+		//image needs to be deleted as well!!!!
+		let item = M.superdi[k];
+		if (nundef(item.img) || item.colls.length > 1) {
+			console.log('!!!no image!!!', k)
+			continue;
+		}
+		let path1 = path.join(__dirname, item.img);
+		console.assert(path1.includes(collname), '!!!!!!!!!!!!!!!!!!');
+		console.log('!!!!!!!!!!!!!deleting', path1);
+		if (fs.existsSync(path1)) fs.unlinkSync(path1); else console.log('NO', path1)
+		delete M.superdi[k];
+	}
+	for (const k in partialdi) {
+		let o=partialdi[k];
+		//do NOT ever save 'key' in superdi
+		delete o.key;
+		M.superdi[k] = o;
+	}
+	if (deleteCollection == true) {
+		let p = path.join(assetsDirectory, 'img', collname);
+		if (fs.existsSync(p)) fs.rmdirSync(p);
+	}
+	let y = yaml.dump(M.superdi);
+	fs.writeFileSync(superdiFile, y, 'utf8');
+	io.emit('superdi', partialdi);
+	res.json(`Superdi updated successfully!`);
 });
 app.post('/overrideUser', (req, res) => {
 	let name = req.body.name;
@@ -500,10 +537,14 @@ app.post('/postUser', (req, res) => {
 	let name = req.body.name;
 	let userdata = req.body;
 	console.log('<== post user', userdata)
-	if (nundef(userdata.key) || nundef(M.superdi[userdata.key])) userdata.key = fs.existsSync(path.join(assetsDirectory, `img/users/${name}.jpg`)) ? name : 'unknown_user';
 	let user = lookup(Session, ['users', name]);
 	let isNew = !user;
-	if (isNew) user = userdata; else copyKeys(userdata, user);
+	if (isNew) {
+		let imgKey = userdata.imgKey;
+		if (nundef(imgKey) || nundef(M.superdi[imgKey])) imgKey = fs.existsSync(path.join(assetsDirectory, `img/users/${name}.jpg`)) ? name : 'unknown_user';		
+		//if (nundef(userdata.imgKey) || nundef(M.superdi[userdata.imgKey])) userdata.imgKey = fs.existsSync(path.join(assetsDirectory, `img/users/${name}.jpg`)) ? name : 'unknown_user';		
+		user = userdata; 
+	}	else copyKeys(userdata, user);
 	saveUser(name, user);
 	let msg = `user posted: ${user.name} new:${isNew}`;
 	console.log(msg)
@@ -516,7 +557,7 @@ app.post('/renameImgDir', (req, res) => {
 	res.json(`dir ${oldname} renamed successfully!`);
 });
 
-app.post('/postTable', (req, res) => { //emits id turn to everyone, fuer den anfang von einer table!
+app.post('/postTable', (req, res) => { //reset version!!! emits id turn to everyone, fuer den anfang von einer table!
 	let id = req.body.id;
 	let newTable = req.body;
 	let table = lookup(Session, ['tables', id]);
@@ -525,6 +566,7 @@ app.post('/postTable', (req, res) => { //emits id turn to everyone, fuer den anf
 	console.log(newTable.status);
 	let isStarted = table.status == 'started';
 	saveTable(id, table);
+	lookupSetOverride(Session, ['tableInfo', id, 'version'], 0);
 	let msg = `table posted: ${table.friendly} new:${isNew} status:${table.status}`;
 	console.log(msg)
 	let turn = isStarted ? table.turn : [];
@@ -532,8 +574,7 @@ app.post('/postTable', (req, res) => { //emits id turn to everyone, fuer den anf
 	res.json(msg);
 });
 
-
-//******** NEW GAME API *********/
+// *** old API ***
 app.post('/olist', (req, res) => { //partial override using olist, emit+return iff valid!
 	let name = req.body.name; if (nundef(name)) return res.json("ERRROR! no name provided for olist!");
 	let id = req.body.id; if (nundef(id)) return res.json("ERRROR! no id provided for olist!");
@@ -560,6 +601,31 @@ app.post('/olist', (req, res) => { //partial override using olist, emit+return i
 	res.json(`YEAH!!!!`);
 });
 
+//******** NEW GAME API *********/
+app.post('/table', (req, res) => { //override & emit iff valid!
+	let name = req.body.name; if (nundef(name)) return res.json("ERRROR! no name provided for olist!");
+	let id = req.body.id; if (nundef(id)) return res.json("ERRROR! no id provided for olist!");
+	let table = req.body.table; if (nundef(table)) return res.json("ERRROR! no table provided for olist!");
+	let step = req.body.step;
+	let stepIfValid = req.body.stepIfValid;
+
+	//validity!
+	let version = lookupSet(Session, ['tableInfo', id, 'version'], step);
+	if (isdef(step) && step < version) { //data obsolete! table version has already been updated!
+		res.json(`INVALID!!!! step:${step} version:${version}`);
+		console.log('INVALID!!!',name,step);
+		return;
+	}
+	if (isdef(stepIfValid)) {
+		lookupSetOverride(Session, ['tableInfo', id, 'version'], stepIfValid);
+		table.step = stepIfValid;
+		saveTableInfo();
+	}
+	saveTable(id, table);
+	io.emit('pending',id);
+	res.json(`YEAH!!!!`);
+});
+
 
 
 async function init() {
@@ -581,8 +647,10 @@ async function init() {
 
 	yamlFile = fs.readFileSync(eventsFile, 'utf8');
 	Session.events = valf(yaml.load(yamlFile), {});
-	yamlFile = fs.readFileSync(superdiFile, 'utf8');
+	yamlFile = fs.readFileSync(mFile, 'utf8');
 	M = valf(yaml.load(yamlFile), {});
+	yamlFile = fs.readFileSync(superdiFile, 'utf8');
+	M.superdi = valf(yaml.load(yamlFile), {});
 	Session.tables = {};
 	let tablefiles = await fsp.readdir(tablesDir);
 	for (const f of tablefiles) {

@@ -1,9 +1,9 @@
 var A = null;
 var Menu = null;
 var T = null;
-var Tid=null;
+var Tid = null;
 var U = null;
-var SLEEP_WATCHER=null; //elim!
+var SLEEP_WATCHER = null; //elim!
 const deepRichColors = [
   "#2B2D42", // Charcoal Blue
   "#3F3351", // Deep Purple
@@ -139,7 +139,7 @@ const CORNERS2 = ['⬔', '⬕'];
 const CORNERS3 = ['⮜', '⮝', '⮞', '⮟'];
 const CORNERS4 = ['⭐', '⭑']; //, '⭒', '⭓'];
 const CORNERS5 = ['⬛', '⬜']; //, '⭒', '⭓'];
-const ANIM={};
+const ANIM = {};
 var Session = {};
 var Clientdata = {};
 const allPeeps = []
@@ -185,7 +185,7 @@ const STYLE_PARAMS = {
   align: 'text-align',
   aspectRatio: 'aspect-ratio',
   bg: 'background-color',
-  bgBlend: 'background-blend-mode',
+  bgBlend: 'background-blend-mode', //'mix-blend-mode', //
   bgImage: 'background-image',
   bgRepeat: 'background-repeat',
   bgSize: 'background-size',

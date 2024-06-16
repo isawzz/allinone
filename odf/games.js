@@ -225,3 +225,4 @@ function getLevelColor(n) {
 
 	return levelColors[n - 1]; //['skyblue','lime','gold','orange','red'][n-1];
 }
+
