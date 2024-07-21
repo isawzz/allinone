@@ -29,6 +29,7 @@ function getImageBoundariesY(ctx,fromy, maxy){
 	to=y; //last non
 	return {from,to};
 }
+
 function getImageBoundariesX(ctx,fromx, maxwhite, minnonwhite, maxx){
 	let x=fromx;
 	let from,to;
