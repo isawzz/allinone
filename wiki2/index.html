@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Wikitravel Image Grid</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+		}
+
+		#imageGrid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+			gap: 10px;
+			margin-top: 20px;
+		}
+
+		.imageItem {
+			text-align: center;
+		}
+
+		.imageItem img {
+			max-width: 100%;
+			height: auto;
+			display: block;
+			margin: 0 auto;
+		}
+	</style>
+</head>
+
+<body>
+	<h1>Wikitravel Image Grid</h1>
+	<input type="text" id="urlInput" placeholder="Enter Wikitravel URL" style="width: 80%;">
+	<button onclick="loadImages()">Load Images</button>
+	<div id="imageGrid"></div>
+
+	<script>
+		async function getImageUrls(wikitravelUrl) {
+			try {
+				const response = await fetch(wikitravelUrl, {
+					headers: {
+						'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+					}
+				});
+
+				if (!response.ok) {
+					throw new Error(`Failed to retrieve the webpage. Status code: ${response.status}`);
+				}
+
+				const htmlText = await response.text();
+				const parser = new DOMParser();
+				const doc = parser.parseFromString(htmlText, 'text/html');
+				const imgTags = doc.querySelectorAll('img');
+				const imgUrls = Array.from(imgTags).map(img => img.src);
+
+				return imgUrls;
+			} catch (error) {
+				console.error('Error:', error);
+				return [];
+			}
+		}
+
+		async function loadImages() {
+			const urlInput = document.getElementById('urlInput').value;
+			const imageGrid = document.getElementById('imageGrid');
+			imageGrid.innerHTML = ''; // Clear previous images
+
+			const imgUrls = await getImageUrls(urlInput);
+
+			imgUrls.forEach(url => {
+				const imageItem = document.createElement('div');
+				imageItem.className = 'imageItem';
+
+				const img = document.createElement('img');
+				img.src = url;
+				img.alt = 'Wikitravel Image';
+
+				const imgUrlText = document.createElement('p');
+				imgUrlText.textContent = url;
+
+				imageItem.appendChild(img);
+				imageItem.appendChild(imgUrlText);
+				imageGrid.appendChild(imageItem);
+			});
+		}
+	</script>
+</body>
+
+</html>
