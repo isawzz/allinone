@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<title>Voronoi Tiles with Neighbor Highlight on Hover</title>
+	<script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6"></script>
+	<style>
+		body {
+			margin: 0;
+			overflow: hidden;
+			background: #111;
+		}
+
+		.tile {
+			position: absolute;
+			width: 100vw;
+			height: 100vh;
+			clip-path: polygon(0 0);
+			background-color: hsl(0, 50%, 50%);
+			transition: background-color 0.3s;
+			cursor: pointer;
+		}
+
+		.highlighted {
+			background-color: yellow !important;
+			/* box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.7);
+			z-index: 10; */
+		}
+	</style>
+</head>
+
+<body>
+	<script>
+		const width = 500; //window.innerWidth;
+		const height = 500; //window.innerHeight;
+		const numPoints = 400;
+
+		const points = Array.from({ length: numPoints }, () => [
+			Math.random() * width,
+			Math.random() * height,
+		]);
+
+		const delaunay = d3.Delaunay.from(points);
+		const voronoi = delaunay.voronoi([10, 10, width-10, height-10]);
+
+		// Store tile divs so we can access by index
+		const tileDivs = [];
+
+		for (let i = 0; i < points.length; i++) {
+			const polygon = voronoi.cellPolygon(i); console.log(polygon)
+			if (!polygon) continue;
+
+			const div = document.createElement('div');
+			div.className = 'tile';
+
+			const clip = polygon.map((p) => `${p[0]}px ${p[1]}px`).join(', ');
+			div.style.clipPath = `polygon(${clip})`;
+
+			const hue = Math.floor(Math.random() * 360);
+			div.style.backgroundColor = `hsl(${hue}, 60%, 60%)`;
+
+			document.body.appendChild(div);
+			tileDivs[i] = div;
+		}
+
+		// Add hover listeners to highlight neighbors
+		tileDivs.forEach((div, i) => {
+			div.addEventListener('mouseenter', () => {
+
+				// Highlight hovered tile
+				//div.classList.add('highlighted');
+
+				// Highlight neighbors
+				for (const neighborIndex of delaunay.neighbors(i)) {
+					if (tileDivs[neighborIndex]) {
+						tileDivs[neighborIndex].classList.add('highlighted');
+					}
+				}
+			});
+
+			div.addEventListener('mouseleave', () => {
+				// Remove highlight from hovered tile
+				div.classList.remove('highlighted');
+
+				// Remove highlight from neighbors
+				for (const neighborIndex of delaunay.neighbors(i)) {
+					if (tileDivs[neighborIndex]) {
+						tileDivs[neighborIndex].classList.remove('highlighted');
+					}
+				}
+			});
+		});
+	</script>
+</body>
+
+</html>

@@ -1,0 +1,140 @@
+/* #region cursor classes */
+.cursorDefault {
+	cursor: default;
+}
+
+.cursorPointer {
+	cursor: pointer;
+}
+
+.cursorCrosshair {
+	cursor: crosshair !important;
+}
+
+.cursorMove {
+	cursor: move;
+}
+
+.cursorHelp {
+	cursor: help;
+}
+
+.cursorWait {
+	cursor: wait;
+}
+
+.cursorText {
+	cursor: text;
+}
+
+.cursorProgress {
+	cursor: progress;
+}
+
+.cursorCell {
+	cursor: cell;
+}
+
+.cursorCross {
+	cursor: cross;
+}
+
+.cursorNotAllowed {
+	cursor: not-allowed;
+}
+
+.cursorColResize {
+	cursor: col-resize;
+}
+
+.cursorRowResize {
+	cursor: row-resize;
+}
+
+.cursorNResize {
+	cursor: n-resize;
+}
+
+.cursorEResize {
+	cursor: e-resize;
+}
+
+.cursorSResize {
+	cursor: s-resize;
+}
+
+.cursorWResize {
+	cursor: w-resize;
+}
+
+.cursorNWSResize {
+	cursor: nwse-resize;
+}
+
+.cursorNESResize {
+	cursor: nesw-resize;
+}
+
+.cursorNWSEResize {
+	cursor: nwse-resize;
+}
+
+.cursorNSResize {
+	cursor: ns-resize;
+}
+
+.cursorEWResize {
+	cursor: ew-resize;
+}
+
+.cursorNSEResize {
+	cursor: nesw-resize;
+}
+
+.cursorZoomIn {
+	cursor: zoom-in;
+}
+
+.cursorZoomOut {
+	cursor: zoom-out;
+}
+
+.cursorGrab {
+	cursor: grab;
+}
+
+.cursorGrabbing {
+	cursor: grabbing;
+}
+
+.cursorAuto {
+	cursor: auto;
+}
+
+.cursorNone {
+	cursor: none;
+}
+/* #endregion */
+
+.selectable{
+	cursor: pointer;
+	border: 6px solid yellow;
+	translate: -3px -3px;
+}
+.rotatingBorder {
+	border: 5px solid #e2eb2e;
+	/* border-top: 5px solid white;  */
+	border-radius: 50%;
+	animation: rotateBorder 2s linear infinite;
+
+}
+
+@keyframes rotateBorder {
+	from {
+		transform: rotate(0deg);
+	}
+
+	to {
+		transform: rotate(360deg);
+	}
+}

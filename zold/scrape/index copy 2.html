@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>City Scraper</title>
+</head>
+
+<body>
+	<h1>City Scraper</h1>
+	<input type="text" id="city-input" placeholder="Enter city name">
+	<button id="fetch-button">Fetch City Data</button>
+	<div id="city-data">
+		<h2 id="city-title"></h2>
+		<img id="city-banner-image" alt="Banner Image" style="max-width: 100%; display: none;">
+		<img id="city-other-image" alt="Other Image" style="max-width: 100%; display: none;">
+		<p id="city-history"></p>
+		<h3>Things to Do</h3>
+		<ul id="city-activities"></ul>
+	</div>
+
+	<script>
+		document.getElementById('fetch-button').addEventListener('click', async () => {
+			const city = document.getElementById('city-input').value;
+
+			if (!city) {
+				alert('Please enter a city name');
+				return;
+			}
+
+			try {
+				const response = await fetch(`http://localhost:3000/city/${encodeURIComponent(city)}`);
+				if (response.ok) {
+					const data = await response.json();
+					document.getElementById('city-title').innerText = data.title;
+
+					const bannerImage = document.getElementById('city-banner-image');
+					if (data.bannerImage) {
+						bannerImage.src = data.bannerImage;
+						bannerImage.style.display = 'block';
+					} else {
+						bannerImage.style.display = 'none';
+					}
+
+					const otherImage = document.getElementById('city-other-image');
+					if (data.otherImage) {
+						otherImage.src = data.otherImage;
+						otherImage.style.display = 'block';
+					} else {
+						otherImage.style.display = 'none';
+					}
+
+					document.getElementById('city-history').innerText = data.history;
+
+					const activitiesList = document.getElementById('city-activities');
+					activitiesList.innerHTML = '';
+					data.activities.forEach(activity => {
+						const listItem = document.createElement('li');
+						listItem.innerText = activity;
+						activitiesList.appendChild(listItem);
+					});
+				} else {
+					alert('City not found');
+				}
+			} catch (error) {
+				console.error('Error fetching city data:', error);
+				alert('Error fetching city data');
+			}
+		});
+	</script>
+</body>
+
+</html>

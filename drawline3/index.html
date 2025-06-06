@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Interactive Lines</title>
+	<style>
+		.line {
+			position: absolute;
+			height: 20px;
+			/* Line thickness */
+			background-color: black;
+			transform-origin: 0 50%;
+			/* Rotate around the center of the thickness */
+		}
+	</style>
+</head>
+
+<body>
+	<script>
+		const lines = [];
+
+		function drawInteractiveLine(p1, p2, color = 'black') {
+			const line = document.createElement('div');
+			const thickness = 20; // Set the line thickness (height) to 20px
+			const offs = thickness / 2;
+			let [x1, y1, x2, y2] = [p1.cxPage, p1.cyPage, p2.cxPage, p2.cyPage];
+
+			const distance = Math.hypot(x2 - x1, y2 - y1);
+			const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+			// Style the line
+			line.className = 'line';
+			line.style.width = `${distance}px`;
+			line.style.height = `${thickness}px`;
+			line.style.transform = `rotate(${angle}deg)`;
+			line.style.left = `${x1}px`;
+			line.style.top = `${y1 - offs}px`;
+			line.style.backgroundColor = color;
+
+			// Store line data
+			line.dataset.x1 = x1;
+			line.dataset.y1 = y1;
+			line.dataset.x2 = x2;
+			line.dataset.y2 = y2;
+			line.dataset.thickness = thickness;
+
+			// Append the line to the body
+			document.body.appendChild(line);
+			lines.push(line); // Store the line for later reference
+		}
+
+		// Function to calculate the perpendicular distance from a point to a line segment
+		function pointToLineDistance(x, y, x1, y1, x2, y2) {
+			const A = x - x1;
+			const B = y - y1;
+			const C = x2 - x1;
+			const D = y2 - y1;
+
+			const dot = A * C + B * D;
+			const len_sq = C * C + D * D;
+			const param = len_sq !== 0 ? dot / len_sq : -1;
+
+			let xx, yy;
+
+			if (param < 0) {
+				xx = x1;
+				yy = y1;
+			} else if (param > 1) {
+				xx = x2;
+				yy = y2;
+			} else {
+				xx = x1 + param * C;
+				yy = y1 + param * D;
+			}
+
+			const dx = x - xx;
+			const dy = y - yy;
+			return Math.sqrt(dx * dx + dy * dy);
+		}
+
+		// Mousemove handler for the container (in this case, the document)
+		document.addEventListener('mousemove', (event) => {
+			const mouseX = event.clientX;
+			const mouseY = event.clientY;
+
+			lines.forEach(line => {
+				const x1 = parseFloat(line.dataset.x1);
+				const y1 = parseFloat(line.dataset.y1);
+				const x2 = parseFloat(line.dataset.x2);
+				const y2 = parseFloat(line.dataset.y2);
+				const thickness = parseFloat(line.dataset.thickness);
+
+				// Calculate the perpendicular distance from the mouse to the line segment
+				const distance = pointToLineDistance(mouseX, mouseY, x1, y1, x2, y2);
+
+				if (distance <= thickness / 2) {
+					line.style.backgroundColor = 'red'; // Change color on hover
+				} else {
+					line.style.backgroundColor = 'black'; // Reset color when not hovered
+				}
+			});
+		});
+
+		// Example usage:
+		drawInteractiveLine({ cxPage: 100, cyPage: 170 }, { cxPage: 300, cyPage: 50 });
+		drawInteractiveLine({ cxPage: 100, cyPage: 20 }, { cxPage: 400, cyPage: 250 });
+	</script>
+</body>
+
+</html>

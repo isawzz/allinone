@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Gallery with Lazy Loading</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+            min-height: 150vh;
+            /* Ensure scrollbar for testing */
+        }
+
+        .gallery-container {
+            border: 1px solid #ccc;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .ellipsis {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            text-align: center;
+        }
+
+        .gallery-cell {
+            background-color: #e9e9e9;
+            border-radius: 6px;
+            padding: 5px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gallery-cell img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 4px;
+        }
+
+        .gallery-label {
+            font-size: 11px;
+            margin-top: 4px;
+            color: #333;
+        }
+
+        /* Icon font example (ensure paths are correct if you use local fonts)
+           @font-face { font-family: 'fa6'; src: url('path/to/fontawesome6.woff2') format('woff2'); }
+           @font-face { font-family: 'emoNoto'; src: local('Apple Color Emoji'), local('Segoe UI Emoji'), local('Noto Color Emoji'); }
+        */
+    </style>
+</head>
+
+<body>
+
+    <h1>My Image Gallery (Lazy Loading)</h1>
+    <div id="galleryRoot" class="gallery-container">
+    </div>
+
+    <script>
+        // --- Global STYLE_PARAMS (needed by mStyle) ---
+        const STYLE_PARAMS = {
+            acontent: 'align-content', aitems: 'align-items', align: 'text-align', aspectRatio: 'aspect-ratio',
+            bg: 'background-color', bgBlend: 'background-blend-mode', bgImage: 'background-image',
+            bgRepeat: 'background-repeat', bgSize: 'background-size', deco: 'text-decoration',
+            dir: 'flex-direction', family: 'font-family', fg: 'color', fontSize: 'font-size',
+            fStyle: 'font-style', fz: 'font-size', gridCols: 'grid-template-columns',
+            gridRows: 'grid-template-rows', h: 'height', hgap: 'column-gap', hmin: 'min-height',
+            hmax: 'max-height', hline: 'line-height', jcontent: 'justify-content',
+            jitems: 'justify-items', justify: 'justify-content', matop: 'margin-top',
+            maleft: 'margin-left', mabottom: 'margin-bottom', maright: 'margin-right',
+            origin: 'transform-origin', overx: 'overflow-x', overy: 'overflow-y',
+            patop: 'padding-top', paleft: 'padding-left', pabottom: 'padding-bottom',
+            paright: 'padding-right', place: 'place-items', rounding: 'border-radius',
+            valign: 'align-items', vgap: 'row-gap', w: 'width', wmin: 'min-width',
+            wmax: 'max-width', weight: 'font-weight', x: 'left', xover: 'overflow-x',
+            y: 'top', yover: 'overflow-y', z: 'z-index'
+        };
+
+        // To store state for multiple gallery instances if needed
+        let galleryStates = {};
+
+        // --- Core Modular Function: displayImageGallery ---
+        function displayImageGallery(parentElementId, allItems, options = {}) {
+            const parentEl = toElem(parentElementId);
+            if (!parentEl) {
+                console.error("Parent element not found:", parentElementId);
+                return;
+            }
+
+            // Initialize or retrieve state for this gallery instance
+            if (!galleryStates[parentElementId]) {
+                galleryStates[parentElementId] = {};
+            }
+            const state = galleryStates[parentElementId];
+
+            // Set or reset state properties
+            state.currentIndex = 0;
+            state.isLoading = false;
+            state.allItems = allItems; // Store all items
+            state.gridContainer = null; // Will be created by renderBatch
+
+            // Remove previous scroll listener if it exists for this instance
+            if (state.scrollHandler) {
+                window.removeEventListener('scroll', state.scrollHandler);
+                state.scrollHandler = null;
+            }
+
+            const defaults = {
+                columns: 5,
+                gap: 10,
+                imageWidth: 120,
+                imageHeight: 120,
+                showLabels: true,
+                imagePrefer: 'photo',
+                onClickImage: null,
+                cellStyles: { bg: '#e9e9e9', fg: '#333', box: true, overflow: 'hidden', padding: 8, rounding: 6 },
+                labelStyles: { fz: 11, cursor: 'pointer', textAlign: 'center', marginTop: 5, color: '#333' },
+                imageContainerStyles: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+                imageElementStyles: { maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', objectPosition: 'center center', borderRadius: '4px' },
+                symbolStyles: { fontFamily: 'emoNoto', display: 'inline-block' },
+                itemsPerPage: 10, // Number of items to load per "page" on scroll
+                initialLoadCount: 0, // Number of items to load initially. If 0, uses itemsPerPage * 2.
+                scrollOffsetTrigger: 300, // Pixels from bottom to trigger load
+                debounceDelay: 100 // Milliseconds to debounce scroll event
+            };
+
+            const config = { ...defaults, ...options };
+            config.cellStyles = { ...defaults.cellStyles, ...(options.cellStyles || {}) };
+            config.labelStyles = { ...defaults.labelStyles, ...(options.labelStyles || {}) };
+            config.imageContainerStyles = { ...defaults.imageContainerStyles, ...(options.imageContainerStyles || {}) };
+            config.imageElementStyles = { ...defaults.imageElementStyles, ...(options.imageElementStyles || {}) };
+            config.symbolStyles = { ...defaults.symbolStyles, ...(options.symbolStyles || {}) };
+
+            const labelHeight = config.showLabels ? (parseInt(config.labelStyles.fz, 10) || 11) + (parseInt(config.labelStyles.marginTop, 10) || 5) + 5 : 0;
+            config.cellStyles.w = config.imageWidth;
+            config.cellStyles.h = config.imageHeight + labelHeight;
+            config.imageContainerStyles.w = config.imageWidth;
+            config.imageContainerStyles.h = config.imageHeight;
+
+            if (config.initialLoadCount === 0) {
+                config.initialLoadCount = config.itemsPerPage * 2; // Default initial load
+            }
+
+            function renderBatch(itemsToRender) {
+                if (!state.gridContainer) { // Create gridContainer only once per initialization
+                    state.gridContainer = mGrid(0, config.columns, parentEl, { // rows = 0 for dynamic height
+                        gap: config.gap,
+                        margin: 'auto',
+                        padding: config.gap
+                    });
+                    mStyle(state.gridContainer, { justifyContent: 'center' });
+                }
+
+                itemsToRender.forEach(itemData => {
+                    const cell = mDom(state.gridContainer, config.cellStyles);
+                    mStyle(cell, { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' });
+
+                    const imageContainer = mDom(cell, config.imageContainerStyles);
+                    let el = null;
+                    const o = itemData;
+
+                    let srcPath = null;
+                    if (config.imagePrefer === 'photo' && o.photo) srcPath = o.photo;
+                    else if (o.img) srcPath = o.img;
+                    else if (config.imagePrefer !== 'photo' && o.photo && !o.img) srcPath = o.photo;
+
+                    const symbolBaseStyle = {
+                        ...config.symbolStyles,
+                        fontSize: config.imageHeight * 0.6,
+                        lineHeight: `${config.imageHeight * 0.6}px`,
+                        color: o.color || config.cellStyles.fg,
+                    };
+
+                    if (srcPath) {
+                        const imgStyles = { ...config.imageElementStyles };
+                        if (o.cats && o.cats.includes('card')) {
+                            imgStyles.objectFit = 'contain';
+                        }
+                        el = mDom(imageContainer, imgStyles, {
+                            tag: 'img', src: srcPath, alt: o.friendlyName || o.key || 'image'
+                        });
+                        el.onerror = () => {
+                            imageContainer.innerHTML = '&#10060;'; // Red X emoji
+                            mStyle(imageContainer, { color: 'red', fontWeight: 'bold', fontSize: `${config.imageHeight * 0.5}px` });
+                        };
+                    } else if (o.text) {
+                        el = mDom(imageContainer, { ...symbolBaseStyle, fontFamily: 'emoNoto' }, { html: o.text });
+                    } else if (o.fa6) {
+                        el = mDom(imageContainer, { ...symbolBaseStyle, fontFamily: 'fa6' }, { html: String.fromCharCode('0x' + o.fa6) });
+                    } else if (o.fa) {
+                        el = mDom(imageContainer, { ...symbolBaseStyle, fontFamily: 'pictoFa' }, { html: String.fromCharCode('0x' + o.fa) });
+                    } else if (o.ga) {
+                        el = mDom(imageContainer, { ...symbolBaseStyle, fontFamily: 'pictoGame' }, { html: String.fromCharCode('0x' + o.ga) });
+                    } else {
+                        el = mDom(imageContainer, { ...symbolBaseStyle, fontSize: config.imageHeight * 0.2 }, { html: o.friendlyName || o.key || 'N/A' });
+                    }
+
+                    if (config.showLabels && o.friendlyName) {
+                        const label = mDom(cell, config.labelStyles, { html: o.friendlyName, className: 'ellipsis' });
+                    }
+
+                    if (config.onClickImage && typeof config.onClickImage === 'function') {
+                        cell.style.cursor = 'pointer';
+                        cell.onclick = (ev) => config.onClickImage(o, ev);
+                    }
+                });
+            }
+
+            function loadMore() {
+                if (state.isLoading || state.currentIndex >= state.allItems.length) {
+                    return;
+                }
+                state.isLoading = true;
+                // console.log("Loading more items, current index:", state.currentIndex);
+
+                const nextItems = state.allItems.slice(state.currentIndex, state.currentIndex + config.itemsPerPage);
+                if (nextItems.length > 0) {
+                    renderBatch(nextItems); // Appends to existing gridContainer
+                    state.currentIndex += nextItems.length;
+                }
+
+                state.isLoading = false;
+                if (state.currentIndex >= state.allItems.length && state.scrollHandler) {
+                    // console.log("All items loaded, removing scroll listener.");
+                    window.removeEventListener('scroll', state.scrollHandler); // All items loaded
+                    state.scrollHandler = null;
+                }
+            }
+
+            function debounce(func, delay) {
+                let timeout;
+                return function (...args) {
+                    const context = this;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(context, args), delay);
+                };
+            }
+
+            mClear(parentEl); // Clear parent for re-initialization
+            state.gridContainer = null; // Ensure grid is recreated
+
+            const initialItemsToLoad = Math.min(config.initialLoadCount, state.allItems.length);
+            const initialItems = state.allItems.slice(0, initialItemsToLoad);
+            renderBatch(initialItems);
+            state.currentIndex = initialItems.length;
+
+            if (state.currentIndex < state.allItems.length) { // Only add listener if there are more items
+                state.scrollHandler = debounce(() => {
+                    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - config.scrollOffsetTrigger) {
+                        loadMore();
+                    }
+                }, config.debounceDelay);
+                window.addEventListener('scroll', state.scrollHandler);
+            }
+        }
+
+        // --- Minimal Dependencies (assumed to be same as previous version) ---
+        function isdef(x) { return x !== null && x !== undefined && x !== 'undefined'; }
+        function nundef(x) { return x === null || x === undefined || x === 'undefined'; }
+        function valf() { for (const arg of arguments) if (isdef(arg)) return arg; return null; }
+        function toElem(d) { return typeof d === 'string' ? document.getElementById(d) : d; }
+        function mClear(d) { if (isdef(d)) toElem(d).innerHTML = ''; }
+        function mAppend(d, child) { toElem(d).appendChild(child); return child; }
+        function mCreate(tag, styles, id) { let d = document.createElement(tag); if (isdef(id)) d.id = id; if (isdef(styles)) mStyle(d, styles); return d; }
+        function mDom(dParent, styles = {}, opts = {}) {
+            let tag = valf(opts.tag, 'div');
+            let d = document.createElement(tag);
+            if (isdef(dParent)) mAppend(toElem(dParent), d);
+            const aliases = { classes: 'className', inner: 'innerHTML', html: 'innerHTML', w: 'width', h: 'height', };
+            for (const opt in opts) {
+                let name = valf(aliases[opt], opt); let val = opts[opt];
+                if (typeof d[name] === 'undefined' || name === 'className' || name === 'innerHTML' || name === 'value' || name === 'src' || name === 'alt' || name.startsWith('on')) {
+                    if (name === 'className' && Array.isArray(val)) { val.forEach(cls => d.classList.add(cls)); }
+                    else if (name === 'className' && typeof val === 'string') { d.className = val; }
+                    else if (typeof d[name] !== 'undefined' && !name.startsWith('on')) { d[name] = val; }
+                    else { d.setAttribute(name, val); }
+                } else { d[name] = val; }
+            }
+            mStyle(d, styles); return d;
+        }
+        function jsCopy(o) { if (typeof o !== 'object' || o === null) return o; return JSON.parse(JSON.stringify(o)); }
+        function makeUnitString(nOrString, unit = 'px', defaultVal = '100%') { if (nundef(nOrString)) return defaultVal; if (typeof nOrString === 'number') nOrString = '' + nOrString + unit; return nOrString; }
+        function mStyle(elem, styles = {}, unit = 'px') {
+            elem = toElem(elem); if (!elem || !elem.style) return;
+            let styleCopy = jsCopy(styles);
+            if (isdef(styleCopy.w100)) styleCopy.w = '100%'; if (isdef(styleCopy.h100)) styleCopy.h = '100%';
+            if (isdef(styleCopy.box)) styleCopy['box-sizing'] = 'border-box';
+            if (isdef(styleCopy.round)) elem.style.setProperty('border-radius', '50%');
+            for (const k in styleCopy) {
+                if (['round', 'box', 'w100', 'h100'].includes(k)) continue;
+                let val = styleCopy[k]; let key = k;
+                if (isdef(STYLE_PARAMS[k])) key = STYLE_PARAMS[k];
+                if (key === 'flex' && typeof val === 'number') val = `${val} 1 0%`;
+                if (elem.style.setProperty) elem.style.setProperty(key, makeUnitString(val, unit));
+                else if (typeof elem.style[key] !== 'undefined') elem.style[key] = makeUnitString(val, unit);
+            }
+        }
+        function mGrid(rows, cols, dParent, styles = {}, opts = {}) {
+            rows = Math.ceil(rows); cols = Math.ceil(cols);
+            const gridStyles = { display: 'grid', ...styles };
+            gridStyles.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            if (isdef(styles.gridCols)) gridStyles.gridTemplateColumns = styles.gridCols;
+            if (rows > 0) { gridStyles.gridTemplateRows = `repeat(${rows}, auto)`; if (isdef(styles.gridRows)) gridStyles.gridTemplateRows = styles.gridRows; }
+            else { gridStyles.overflowY = 'auto'; }
+            return mDom(toElem(dParent), gridStyles, opts);
+        }
+
+        // --- Example Usage ---
+        window.onload = function () {
+            const galleryElementId = 'galleryRoot';
+            const manyItems = [];
+            const itemTemplates = [
+                { friendlyName: 'Green Tree', photo: 'https://placehold.co/100x100/3cb44b/ffffff?text=Tree', cats: ['nature'] },
+                { friendlyName: 'Golden Star', text: '🌟', color: '#FFD700' },
+                { friendlyName: 'Red Car', fa6: 'f1b9', color: '#e6194B' },
+                { friendlyName: 'Sample Card', photo: 'https://placehold.co/100x150/4363d8/ffffff?text=Card', cats: ['card'] },
+                { friendlyName: 'Paw Print', fa: 'f1b0', color: '#96613d' },
+                { friendlyName: 'Error Test', photo: 'path/to/nonexistent_image.jpg', },
+                { friendlyName: 'Settings', ga: 'e994', color: '#555555' },
+                { friendlyName: 'Long Name', text: '🏷️', color: '#f58231' }
+            ];
+
+            for (let i = 0; i < 100; i++) { // Create 100 items for testing scroll
+                const template = itemTemplates[i % itemTemplates.length];
+                manyItems.push({
+                    ...template,
+                    key: `${template.friendlyName.replace(/\s+/g, '_')}_${i}`,
+                    friendlyName: `${template.friendlyName} #${i + 1}`
+                });
+            }
+
+            displayImageGallery(galleryElementId, manyItems, {
+                columns: 4,
+                gap: 15,
+                imageWidth: 100,
+                imageHeight: 100,
+                itemsPerPage: 12, // Load 12 items (3 rows of 4) per scroll
+                initialLoadCount: 24, // Initially load 24 items (6 rows of 4)
+                scrollOffsetTrigger: 250, // Trigger load when 250px from bottom
+                onClickImage: (item, event) => {
+                    console.log('Clicked on item:', item.friendlyName, 'Key:', item.key);
+                    // alert(`You clicked on: ${item.friendlyName}`); // Alert can be annoying with many items
+                },
+                cellStyles: { bg: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: 10, },
+                labelStyles: { color: '#007bff', fz: 12, weight: '500' }
+            });
+
+            // Second gallery example (will also be lazy loaded independently if it has many items)
+            mDom(document.body, { position: 'relative', left: '20px', marginTop: '30px' }, { tag: 'h2', html: 'Another Gallery' });
+            const anotherGalleryId = 'anotherGalleryRoot';
+            const anotherGalleryContainer = mDom(document.body, { marginTop: '10px' }, { tag: 'div', id: anotherGalleryId, className: 'gallery-container' });
+
+            const moreFewItems = [ // Fewer items, so no scrolling needed for this one
+                { friendlyName: 'Sun', text: '☀️', color: '#ffe119', key: 'sun1' },
+                { friendlyName: 'Moon', text: '🌙', color: '#606070', key: 'moon1' },
+                { friendlyName: 'Heart', fa6: 'f004', color: '#e6194B', key: 'heart1' },
+            ];
+            displayImageGallery(anotherGalleryId, moreFewItems, {
+                columns: 3,
+                gap: 20,
+                imageWidth: 80,
+                imageHeight: 80,
+                itemsPerPage: 3,
+                initialLoadCount: 3,
+                onClickImage: (item) => alert(`Item: ${item.friendlyName}`),
+                cellStyles: { bg: '#fdf5e6' }
+            });
+        };
+    </script>
+</body>
+
+</html>

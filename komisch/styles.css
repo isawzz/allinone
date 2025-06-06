@@ -1,0 +1,12 @@
+html, body {
+	height: 100%; /* Full height for html and body */
+	margin: 0;
+	padding: 0;
+}
+.content {
+	height: 100%; /* Full height content inside the body */
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: lightblue;
+}

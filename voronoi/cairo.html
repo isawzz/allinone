@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Cairo Pentagon Tiling</title>
+	<style>
+		body {
+			margin: 0;
+			background: #222;
+		}
+
+		.grid {
+			position: relative;
+			width: 100vw;
+			height: 100vh;
+			overflow: hidden;
+		}
+
+		.tile {
+			position: absolute;
+			width: 60px;
+			height: 60px;
+			background-color: #f0c674;
+			clip-path: polygon(0% 0%,
+					75% 0%,
+					100% 25%,
+					25% 100%,
+					0% 75%);
+			box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+		}
+	</style>
+</head>
+
+<body>
+	<div class="grid" id="grid"></div>
+
+	<script>
+		const grid = document.getElementById('grid');
+		const tileSize = 60;
+		const rows = Math.ceil(window.innerHeight / tileSize);
+		const cols = Math.ceil(window.innerWidth / tileSize);
+
+		for (let row = 0; row < rows; row++) {
+			for (let col = 0; col < cols; col++) {
+				const tile = document.createElement('div');
+				tile.className = 'tile';
+				tile.style.left = `${col * tileSize}px`;
+				tile.style.top = `${row * tileSize}px`;
+
+				// Optional: alternate colors
+				tile.style.backgroundColor = (row + col) % 2 === 0 ? '#f0c674' : '#e3b04b';
+
+				grid.appendChild(tile);
+			}
+		}
+	</script>
+</body>
+
+</html>

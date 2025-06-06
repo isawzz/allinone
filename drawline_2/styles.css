@@ -1,0 +1,16 @@
+.rotatingBorder{
+	border: 5px solid #e2eb2e;
+	/* border-top: 5px solid white;  */
+	border-radius: 50%;
+	animation: rotateBorder 2s linear infinite;
+
+}
+@keyframes rotateBorder {
+	from {
+			transform: rotate(0deg);
+	}
+	to {
+			transform: rotate(360deg);
+	}
+}
+

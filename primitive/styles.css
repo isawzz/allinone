@@ -1,0 +1,16 @@
+html,
+body {
+  margin: 0;
+  height: 100vh;
+}
+.airport {
+  background-image: url('../assets/img/airport/airport2.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+.fullpage{
+  width: 100vw;
+  height: 100vh;
+}
+

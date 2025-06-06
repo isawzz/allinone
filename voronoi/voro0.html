@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Voronoi Tiling with clip-path</title>
+	<script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6"></script>
+	<style>
+		body {
+			margin: 0;
+			overflow: hidden;
+			background: #111;
+		}
+
+		.tile {
+			position: absolute;
+			width: 100vw;
+			height: 100vh;
+			clip-path: polygon(0 0);
+			background-color: hsl(0, 50%, 50%);
+			transition: background-color 0.3s;
+		}
+	</style>
+</head>
+
+<body>
+	<script>
+		const width = window.innerWidth;
+		const height = window.innerHeight;
+		const numPoints = 100;
+
+		const points = Array.from({ length: numPoints }, () => [
+			Math.random() * width,
+			Math.random() * height
+		]);
+
+		const delaunay = d3.Delaunay.from(points);
+		const voronoi = delaunay.voronoi([0, 0, width, height]);
+
+		for (let i = 0; i < points.length; i++) {
+			const polygon = voronoi.cellPolygon(i);
+			if (!polygon) continue;
+
+			const div = document.createElement('div');
+			div.className = 'tile';
+
+			// Convert polygon points to clip-path
+			const clip = polygon.map(p => `${p[0]}px ${p[1]}px`).join(', ');
+			div.style.clipPath = `polygon(${clip})`;
+
+			// Give each a random color
+			const hue = Math.floor(Math.random() * 360);
+			div.style.backgroundColor = `hsl(${hue}, 60%, 60%)`;
+
+			document.body.appendChild(div);
+		}
+	</script>
+</body>
+
+</html>

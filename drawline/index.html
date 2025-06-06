@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw Line Between Divs</title>
+    <style>
+        #container {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            border: 1px solid #ccc;
+        }
+        .box {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: red;
+        }
+        #box1 { top: 100px; left: 100px; }
+        #box2 { top: 300px; left: 300px; }
+        #lineCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allow clicks to pass through */
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="box1" class="box"></div>
+        <div id="box2" class="box"></div>
+        <canvas id="lineCanvas"></canvas>
+    </div>
+
+    <script>
+        function drawLineBetweenDivs(div1, div2, canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+
+            // Resize canvas to fit the container
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            // Get positions and dimensions of the divs
+            const rect1 = div1.getBoundingClientRect();
+            const rect2 = div2.getBoundingClientRect();
+            const containerRect = canvas.parentElement.getBoundingClientRect();
+
+            const x1 = rect1.left - containerRect.left + rect1.width / 2;
+            const y1 = rect1.top - containerRect.top + rect1.height / 2;
+            const x2 = rect2.left - containerRect.left + rect2.width / 2;
+            const y2 = rect2.top - containerRect.top + rect2.height / 2;
+
+            // Draw line
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous lines
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Example usage
+        const box1 = document.getElementById('box1');
+        const box2 = document.getElementById('box2');
+        drawLineBetweenDivs(box1, box2, 'lineCanvas');
+    </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Draw Lines Between Circles</title>
+	<style>
+		#container {
+			position: relative;
+			width: 500px;
+			height: 500px;
+			border: 1px solid #ccc;
+		}
+
+		.circle {
+			position: absolute;
+			width: 50px;
+			height: 50px;
+			border-radius: 50%;
+			background-color: red;
+		}
+
+		#canvas1 {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			pointer-events: none;
+			/* Allow clicks to pass through */
+		}
+	</style>
+</head>
+
+<body>
+	<div id="container">
+		<div id="circle1" class="circle" style="top: 100px; left: 100px;"></div>
+		<div id="circle2" class="circle" style="top: 300px; left: 300px;"></div>
+		<div id="circle3" class="circle" style="top: 200px; left: 200px;"></div>
+		<canvas id="canvas1"></canvas>
+	</div>
+
+	<script>
+			function isClearLine(circle1, circle2) {
+				const { x: x1, y: y1 } = getCenter(circle1);
+				const { x: x2, y: y2 } = getCenter(circle2);
+				const radius = parseInt(window.getComputedStyle(circle1).width) / 2;
+
+				return !circles.some(circle => {
+					if (circle === circle1 || circle === circle2) return false;
+					const { x, y } = getCenter(circle);
+					const circleRadius = parseInt(window.getComputedStyle(circle).width) / 2;
+					return isLineIntersectingCircle(x1, y1, x2, y2, x, y, circleRadius);
+				});
+			}
+		function drawLinesBetweenCircles(circles, canvasId) {
+			const canvas = document.getElementById(canvasId);
+			const ctx = canvas.getContext('2d');
+
+			// Resize canvas to fit the container
+			canvas.width = canvas.parentElement.clientWidth;
+			canvas.height = canvas.parentElement.clientHeight;
+
+			// Clear canvas
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+			function getCenter(circle) {
+				const rect = circle.getBoundingClientRect();
+				const containerRect = canvas.parentElement.getBoundingClientRect();
+				return {
+					x: rect.left - containerRect.left + rect.width / 2,
+					y: rect.top - containerRect.top + rect.height / 2
+				};
+			}
+
+			function distance(x1, y1, x2, y2) {
+				return Math.hypot(x2 - x1, y2 - y1);
+			}
+
+			function isLineIntersectingCircle(x1, y1, x2, y2, circleX, circleY, radius) {
+				// Check if circle center is within the line segment bounds
+				const len = distance(x1, y1, x2, y2);
+				const dot = ((circleX - x1) * (x2 - x1) + (circleY - y1) * (y2 - y1)) / (len * len);
+				const closestX = x1 + dot * (x2 - x1);
+				const closestY = y1 + dot * (y2 - y1);
+				const distanceToCircle = distance(circleX, circleY, closestX, closestY);
+				return distanceToCircle < radius;
+			}
+
+
+			// Draw lines between circles
+			for (let i = 0; i < circles.length; i++) {
+				for (let j = i + 1; j < circles.length; j++) {
+					const circle1 = circles[i];
+					const circle2 = circles[j];
+					if (isClearLine(circle1, circle2)) {
+						const { x: x1, y: y1 } = getCenter(circle1);
+						const { x: x2, y: y2 } = getCenter(circle2);
+
+						ctx.beginPath();
+						ctx.moveTo(x1, y1);
+						ctx.lineTo(x2, y2);
+						ctx.strokeStyle = '#000';
+						ctx.lineWidth = 2;
+						ctx.stroke();
+					}
+				}
+			}
+		}
+
+		// Example usage
+		const circles = Array.from(document.querySelectorAll('.circle'));
+		drawLinesBetweenCircles(circles, 'canvas1');
+
+		console.log(isClearLine(circles[0], circles[1]))
+
+	</script>
+</body>
+
+</html>
