@@ -18,6 +18,7 @@
     "_hideTEMP",
     "_projects",
     "CODE.js",
-    "_weg"
+    "_weg",
+    "**/_*"
   ]
 }
